@@ -1,3 +1,3 @@
-# MP3-Player using tkinker
+# MP3-Player using tkinter
 
 Python

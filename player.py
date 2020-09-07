@@ -1,10 +1,43 @@
 from tkinter import *
 from tkinter import filedialog
+import pygame
+import time
+from mutagen.mp3 import MP3
 
 root = Tk()
 
 root.title("MP3 Player")
 root.geometry("500x400")
+
+#initilize pygame 
+pygame.mixer.init()
+
+# cerate function to deal with time
+def play_time():
+	#grab current song time
+	current_time = pygame.mixer.music.get_pos() / 1000
+	#time format
+	converted_current_time = time.strftime('%H:%M:%S', time.gmtime(current_time))
+
+	song = playlist_box.get(ACTIVE)
+	song = f'G:/mp3/audio/{song}.mp3'
+
+	#find the current song length
+	song_mut = MP3(song)
+	global song_length
+	song_length = song_mut.info.length
+	#convert to time format
+	converted_song_length = time.strftime('%H:%M:%S', time.gmtime(song_length))
+	#my_label.config(text=converted_song_length)
+
+	if current_time >=1:
+	#current time to status bar
+		status_bar.config(text=f'Time Elapsed : {converted_current_time} Of {converted_song_length} ')
+	#check loop every second
+	status_bar.after(1000,play_time)
+
+
+
 
 
 #function to add one song
@@ -46,6 +79,103 @@ def delete_song():
 def delete_all_songs():
 	playlist_box.delete(0 , END)
 
+# create play funtion
+def play():
+	#reconstruct song eith directory steuture
+	song = playlist_box.get(ACTIVE)
+	song = f'G:/mp3/audio/{song}.mp3'
+
+	#my_label.config(text=song)
+
+	#load song with pygame mixer
+	pygame.mixer.music.load(song)
+
+	#play song with pygame mixer
+	pygame.mixer.music.play(loops=0)
+
+	#get song time
+	play_time()
+
+ #create stop function
+def stop():
+	#stop the song
+ 	pygame.mixer.music.stop()
+ 	#clear playlist bar
+ 	playlist_box.selection_clear(ACTIVE)
+
+ 	status_bar.config(text='')
+
+# create oaused variable
+global paused
+paused = False
+
+ # create pause function
+def pause(is_paused):
+	global paused 
+	paused = is_paused
+
+	if paused:
+		#unpause
+		pygame.mixer.music.unpause()
+		paused = False
+	else:
+		#pause
+		pygame.mixer.music.pause()
+		paused = True
+
+
+#create next song function
+def next_song():
+	#get current song number
+	next_one = playlist_box.curselection()
+	#add 1 to the current song
+	next_one = next_one[0] + 1
+
+	#grab song title from the playlist
+	song = playlist_box.get(next_one)
+	# add directory structure stuff to the song
+	song = f'G:/mp3/audio/{song}.mp3'
+	#load song with pygame mixer
+	pygame.mixer.music.load(song)
+
+	#play song with pygame mixer
+	pygame.mixer.music.play(loops=0)
+
+	#clear active bar in playlist
+	playlist_box.selection_clear(0, END)
+
+	#move active bar to next song
+	playlist_box.activate(next_one)
+
+	#set the active bar to the next song
+	playlist_box.selection_set(next_one , last=None)
+
+
+#create previous song function
+def previous_song():
+	#get current song number
+	next_one = playlist_box.curselection()
+	#add 1 to the current song
+	next_one = next_one[0] - 1
+
+	#grab song title from the playlist
+	song = playlist_box.get(next_one)
+	# add directory structure stuff to the song
+	song = f'G:/mp3/audio/{song}.mp3'
+	#load song with pygame mixer
+	pygame.mixer.music.load(song)
+
+	#play song with pygame mixer
+	pygame.mixer.music.play(loops=0)
+
+	#clear active bar in playlist
+	playlist_box.selection_clear(0, END)
+
+	#move active bar to next song
+	playlist_box.activate(next_one)
+
+	#set the active bar to the next song
+	playlist_box.selection_set(next_one , last=None)
 
 # create Playlist Box
 playlist_box = Listbox(root, bg="black", fg="green", width=60 , selectbackground= "white" , selectforeground = "black" )
@@ -64,11 +194,11 @@ control_frame.pack(pady=20)
 
 
 # Create Play/Pause and otherButtons
-backward_button = Button(control_frame, image = backward_button_img, borderwidth = 0)
-forward_button = Button(control_frame, image = forward_button_img, borderwidth = 0)
-play_button = Button(control_frame, image = play_button_img, borderwidth = 0)
-pause_button = Button(control_frame, image = pause_button_img, borderwidth = 0)
-stop_button = Button(control_frame, image = stop_button_img, borderwidth = 0)
+backward_button = Button(control_frame, image = backward_button_img, borderwidth = 0 , command = previous_song)
+forward_button = Button(control_frame, image = forward_button_img, borderwidth = 0 , command = next_song)
+play_button = Button(control_frame, image = play_button_img, borderwidth = 0,command=play)
+pause_button = Button(control_frame, image = pause_button_img, borderwidth = 0, command = lambda: pause(paused))
+stop_button = Button(control_frame, image = stop_button_img, borderwidth = 0, command=stop)
 
 
 backward_button.grid(row=0, column = 0 , padx = 10)
@@ -99,6 +229,11 @@ remove_song_menu.add_command(label="Delete all songs from playlist" , command = 
 # temporary label 
 my_label = Label(root , text = '')
 my_label.pack(pady=20)
+
+
+# creare status bar
+status_bar = Label(root , text = '' , bd= 1 , relief = GROOVE , anchor = E)
+status_bar.pack(fill=X, side=BOTTOM, ipady=2)
 
 
 
